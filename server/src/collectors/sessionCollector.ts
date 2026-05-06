@@ -65,32 +65,46 @@ function extractAgentIdFromPath(filePath: string): string {
 
 function findAllSessionFiles(): Array<{ path: string; agentId: string }> {
   const files: Array<{ path: string; agentId: string }> = []
+  const seenPaths = new Set<string>()
 
-  // Primary: scan ~/.openclaw/agents/<agentId>/sessions/*.jsonl (real OpenClaw data)
-  const realAgentsDir = path.join(OPENCLAW_ROOT, 'agents')
-  if (fs.existsSync(realAgentsDir)) {
-    const agentDirs = fs.readdirSync(realAgentsDir)
-    agentDirs.forEach(agentId => {
-      const agentSessionsDir = path.join(realAgentsDir, agentId, 'sessions')
-      if (fs.existsSync(agentSessionsDir) && fs.statSync(agentSessionsDir).isDirectory()) {
-        const entries = fs.readdirSync(agentSessionsDir)
-        entries.forEach(entry => {
-          if (entry.endsWith('.jsonl')) {
-            files.push({ path: path.join(agentSessionsDir, entry), agentId })
-          }
-        })
-      }
-    })
+  // Scan all candidate agent directories for sessions
+  const candidateDirs = [
+    path.join(OPENCLAW_ROOT, 'agents'),           // ~/.openclaw/agents/
+    path.join(WORKSPACE_ROOT, 'agents'),           // ~/.openclaw/workspace/agents/
+  ].filter(d => fs.existsSync(d))
+
+  for (const agentsDir of candidateDirs) {
+    try {
+      const agentDirs = fs.readdirSync(agentsDir)
+      agentDirs.forEach(agentId => {
+        const agentSessionsDir = path.join(agentsDir, agentId, 'sessions')
+        if (fs.existsSync(agentSessionsDir) && fs.statSync(agentSessionsDir).isDirectory()) {
+          const entries = fs.readdirSync(agentSessionsDir)
+          entries.forEach(entry => {
+            if (entry.endsWith('.jsonl')) {
+              const filePath = path.join(agentSessionsDir, entry)
+              if (!seenPaths.has(filePath)) {
+                seenPaths.add(filePath)
+                files.push({ path: filePath, agentId })
+              }
+            }
+          })
+        }
+      })
+    } catch { /* skip unreadable dirs */ }
   }
 
-  // Fallback: workspace sessions directory
+  // Fallback: workspace sessions directory (flat structure)
   const mainSessionsDir = path.join(WORKSPACE_ROOT, 'sessions')
   if (fs.existsSync(mainSessionsDir)) {
     const entries = fs.readdirSync(mainSessionsDir)
     entries.forEach(entry => {
       if (entry.endsWith('.jsonl')) {
         const filePath = path.join(mainSessionsDir, entry)
-        files.push({ path: filePath, agentId: extractAgentIdFromPath(filePath) })
+        if (!seenPaths.has(filePath)) {
+          seenPaths.add(filePath)
+          files.push({ path: filePath, agentId: extractAgentIdFromPath(filePath) })
+        }
       }
     })
   }
