@@ -1,0 +1,58 @@
+import express from 'express'
+import cors from 'cors'
+import { refresh, getCache } from './store/statsStore'
+
+// Import routes
+import metricsRouter from './routes/metrics'
+import agentsRouter from './routes/agents'
+import trendsRouter from './routes/trends'
+import alertsRouter from './routes/alerts'
+import tasksRouter from './routes/tasks'
+import cronRouter from './routes/cron'
+import memoryRouter from './routes/memory'
+import docsRouter from './routes/docs'
+
+const app = express()
+const PORT = process.env.API_PORT || 3001
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173'
+
+// Middleware
+app.use(cors({ origin: CORS_ORIGIN }))
+app.use(express.json())
+
+// Routes
+app.use('/api/metrics', metricsRouter)
+app.use('/api/agents', agentsRouter)
+app.use('/api/trends', trendsRouter)
+app.use('/api/alerts', alertsRouter)
+app.use('/api/tasks', tasksRouter)
+app.use('/api/cron', cronRouter)
+app.use('/api/memory', memoryRouter)
+app.use('/api/docs', docsRouter)
+
+// Health check
+app.get('/health', (req, res) => {
+  const cache = getCache()
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    lastUpdate: cache.updatedAt
+  })
+})
+
+// Initial refresh
+console.log('[StatsStore] Performing initial refresh...')
+refresh()
+
+// Auto-refresh every 5 minutes
+const REFRESH_INTERVAL = 5 * 60 * 1000
+setInterval(() => {
+  refresh()
+}, REFRESH_INTERVAL)
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Agent Cockpit API Server running on port ${PORT}`)
+  console.log(`CORS enabled for: ${CORS_ORIGIN}`)
+  console.log(`Auto-refresh interval: ${REFRESH_INTERVAL / 1000}s`)
+})
