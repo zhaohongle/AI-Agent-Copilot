@@ -39,6 +39,8 @@ interface DashboardState {
   taskTrend30: TrendData[]
   lastUpdated: number
   refresh: () => void
+  reconnect: () => void
+  retrying: boolean
 }
 
 const DashboardContext = createContext<DashboardState | null>(null)
@@ -63,6 +65,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const isFetching = useRef(false)
   const isInitialized = useRef(false)
+
+  const [retrying, setRetrying] = useState(false)
 
   const fetchAll = useCallback(async (silent = false) => {
     if (isFetching.current) return
@@ -125,6 +129,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const reconnect = useCallback(async () => {
+    if (retrying) return
+    setRetrying(true)
+    try {
+      await fetchAll(false)
+    } finally {
+      setRetrying(false)
+    }
+  }, [fetchAll, retrying])
+
   useEffect(() => {
     // 页面挂载后立即后台获取真实数据（不阻塞渲染）
     fetchAll(true)
@@ -136,7 +150,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     <DashboardContext.Provider value={{
       isLive, isLoading, isRefreshing, metrics, agents, alerts, tasks,
       cronJobs, memoryFiles, tokenTrend30, tokenTrendToday, taskTrend30,
-      lastUpdated, refresh: fetchAll,
+      lastUpdated, refresh: fetchAll, reconnect, retrying,
     }}>
       {children}
     </DashboardContext.Provider>
@@ -150,8 +164,8 @@ export function useDashboard() {
 }
 
 export function useApiStatus() {
-  const { isLive, isLoading: isChecking } = useDashboard()
-  return { isLive, isChecking }
+  const { isLive, isLoading: isChecking, reconnect, retrying } = useDashboard()
+  return { isLive, isChecking, reconnect, retrying }
 }
 
 export function useMetrics() {
