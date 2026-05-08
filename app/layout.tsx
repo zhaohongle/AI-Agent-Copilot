@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { RightPanel } from '@/components/layout/RightPanel'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { DashboardProvider } from '@/lib/dashboard-context'
+import { BackendBanner } from '@/components/layout/BackendBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({
             <div className="min-h-screen bg-main">
               <Header />
               <Sidebar />
+              <BackendBanner />
               <main className="ml-[220px] mr-[320px] pt-[79px] p-6">
                 {children}
               </main>
