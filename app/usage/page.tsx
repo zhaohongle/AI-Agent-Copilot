@@ -25,10 +25,11 @@ export default function UsagePage() {
   const { agents } = useAgents()
   const { trends: tokenTrend } = useTrends('token', '30days')
 
-  const agentTokenData = agents.map(agent => ({
+  const uniqueAgents = agents.filter((agent, idx, arr) => arr.findIndex(a => a.id === agent.id) === idx)
+  const agentTokenData = uniqueAgents.map(agent => ({
     name: agent.name,
     value: agent.todayTokens,
-    color: ['#3B82F6', '#6366F1', '#8B5CF6', '#A78BFA', '#EC4899', '#F59E0B'][agents.indexOf(agent)]
+    color: ['#3B82F6', '#6366F1', '#8B5CF6', '#A78BFA', '#EC4899', '#F59E0B'][uniqueAgents.indexOf(agent)]
   }))
 
   return (
@@ -115,6 +116,7 @@ export default function UsagePage() {
           <h3 className="text-lg font-bold text-primary mb-4">{locale === 'zh' ? '龙虾效率排行' : 'Agent Efficiency Ranking'}</h3>
           <div className="space-y-3">
             {agents
+              .filter((agent, idx, arr) => arr.findIndex(a => a.id === agent.id) === idx)
               .sort((a, b) => b.todayTasks - a.todayTasks)
               .map((agent, index) => (
                 <div key={agent.id} className="flex items-center gap-3 p-3 rounded-lg bg-main">

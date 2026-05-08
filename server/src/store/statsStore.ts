@@ -3,6 +3,57 @@ import { getAgentConfigs, getAllAgentIds } from '../collectors/fileWatcher'
 import { collectCronJobs } from '../collectors/cronCollector'
 import { Metrics, Agent, TrendData, DonutDataItem, Alert, Task, SessionEntry } from '../types'
 
+/**
+ * 从原始消息内容中提取可读的任务名称
+ * 处理以下格式：
+ * 1. 带 "Sender (untrusted metadata)" 前缀的系统包裹消息
+ * 2. JSON 数组格式 [{"type":"text","text":"..."}]
+ * 3. 纯文本
+ */
+function extractReadableTaskName(content: string): string {
+  if (!content || typeof content !== 'string') return '(任务消息)'
+
+  let text = content
+
+  // Step 1: 尝试解析为 JSON 数组格式（如 [{"type":"text","text":"..."}]）
+  try {
+    const parsed = JSON.parse(text)
+    if (Array.isArray(parsed)) {
+      const textItem = parsed.find((item: { type?: string; text?: string }) => item.type === 'text' && item.text)
+      if (textItem?.text) {
+        text = textItem.text
+      }
+    } else if (typeof parsed === 'object' && parsed.text) {
+      text = parsed.text
+    }
+  } catch {
+    // Not JSON, use as-is
+  }
+
+  // Step 2: 过滤系统标记前缀（如 "Sender (untrusted metadata): ..." 或 "[timestamp]" 等）
+  // 匹配 "Sender" 开头的元数据行并移除
+  text = text.replace(/^Sender\s*\([^)]*\)\s*:\s*/gm, '')
+
+  // Step 3: 移除 markdown 代码块标记
+  text = text.replace(/```[\s\S]*?```/g, '')
+
+  // Step 4: 移除 JSON 代码块起始标记（如 ```json）
+  text = text.replace(/```\w*\n?/g, '')
+
+  // Step 5: 清理多余空白
+  text = text.replace(/\n{2,}/g, '\n').trim()
+
+  // Step 6: 如果清理后为空或只有标点/空格，返回默认
+  if (!text || /^[\s\W]+$/.test(text)) return '(任务消息)'
+
+  // Step 7: 截断
+  if (text.length > 50) {
+    return text.slice(0, 50) + '...'
+  }
+
+  return text
+}
+
 interface StatsCache {
   metrics: Metrics
   agents: Agent[]
@@ -171,14 +222,17 @@ export function refresh(): void {
   const allAgentIds = getAllAgentIds()
   const cronJobs = collectCronJobs()
 
-  // Build agents array
+  // Build agents array (deduplicated by agentId)
   const agents: Agent[] = []
+  const seenAgentIds = new Set<string>()
   const now = Date.now()
   const fifteenMinutesAgo = now - 15 * 60 * 1000
   const fiveMinutesAgo = now - 5 * 60 * 1000
   const oneHourAgo = now - 60 * 60 * 1000
 
   allAgentIds.forEach((agentId: string) => {
+    if (seenAgentIds.has(agentId)) return  // Deduplicate
+    seenAgentIds.add(agentId)
     const agentConfig = agentConfigs.find((c: any) => c.agentId === agentId)
     const identityFile = agentConfig?.files.find((f: any) => f.name === 'IDENTITY.md')
     const identity = identityFile ? parseIdentityMd(identityFile.content) : {}
@@ -233,14 +287,14 @@ export function refresh(): void {
     let currentTask = '待命中'
     const lastUser = [...todaySessions].reverse().find(s => getEntryRole(s) === 'user')
     if (lastUser) {
-      currentTask = getEntryContent(lastUser).slice(0, 50) + '...'
+      currentTask = extractReadableTaskName(getEntryContent(lastUser))
     }
 
     // Get last output
     let lastOutput = '暂无'
     const lastAssistant = [...recentSessions].reverse().find(s => getEntryRole(s) === 'assistant')
     if (lastAssistant) {
-      lastOutput = getEntryContent(lastAssistant).slice(0, 50) + '...'
+      lastOutput = extractReadableTaskName(getEntryContent(lastAssistant))
     }
 
     agents.push({
@@ -314,7 +368,7 @@ export function refresh(): void {
 
         tasks.push({
           id: `task_${taskId++}`,
-          name: msgContent.slice(0, 100),
+          name: extractReadableTaskName(msgContent),
           status,
           agentId: agent.id,
           agentName: agent.name,

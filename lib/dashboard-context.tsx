@@ -102,11 +102,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setIsLive(alive)
 
       if (alive) {
+        // Real data mode: completely replace mock data with live API data
         if (metricsData.status === 'fulfilled' && metricsData.value) setMetrics(metricsData.value)
-        if (agentsData.status === 'fulfilled' && agentsData.value?.length) setAgents(agentsData.value)
+        if (agentsData.status === 'fulfilled' && agentsData.value) setAgents(agentsData.value)
         if (alertsData.status === 'fulfilled' && alertsData.value) setAlerts(alertsData.value)
         if (tasksData.status === 'fulfilled' && tasksData.value) setTasks(tasksData.value)
-        if (cronData.status === 'fulfilled' && cronData.value) setCronJobs(cronData.value)
+        // For cron/metrics: always replace when backend is alive (even with fewer items)
+        if (cronData.status === 'fulfilled') setCronJobs(cronData.value || [])
         if (memoryData.status === 'fulfilled' && memoryData.value) setMemoryFiles(memoryData.value)
         if (tok30.status === 'fulfilled' && tok30.value) setTokenTrend30(tok30.value)
         if (tokToday.status === 'fulfilled' && tokToday.value) setTokenTrendToday(tokToday.value)

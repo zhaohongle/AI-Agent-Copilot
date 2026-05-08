@@ -1,8 +1,11 @@
 'use client'
 
 import { Settings as SettingsIcon, Bell, Palette, Key, Database } from 'lucide-react'
+import { useThemeStore } from '@/lib/store'
 
 export default function SettingsPage() {
+  const { isDark, setDark } = useThemeStore()
+
   return (
     <div className="space-y-6 pt-[15px]">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -38,16 +41,12 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-3">
             <label className="flex items-center justify-between p-3 rounded-lg bg-main cursor-pointer">
-              <span className="text-sm text-primary">跟随系统</span>
-              <input type="radio" name="theme" className="w-4 h-4" />
-            </label>
-            <label className="flex items-center justify-between p-3 rounded-lg bg-main cursor-pointer">
               <span className="text-sm text-primary">浅色模式</span>
-              <input type="radio" name="theme" className="w-4 h-4" />
+              <input type="radio" name="theme" className="w-4 h-4" checked={!isDark} onChange={() => setDark(false)} />
             </label>
             <label className="flex items-center justify-between p-3 rounded-lg bg-main cursor-pointer">
               <span className="text-sm text-primary">深色模式</span>
-              <input type="radio" name="theme" defaultChecked className="w-4 h-4" />
+              <input type="radio" name="theme" className="w-4 h-4" checked={isDark} onChange={() => setDark(true)} />
             </label>
           </div>
         </div>
