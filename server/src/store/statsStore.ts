@@ -152,10 +152,16 @@ function generateAlerts(
     if (agent.status === 'online') {
       const agentStat = sessionStats.agentStats.get(agent.id)
       if (agentStat && agentStat.sessions.length > 0) {
-        const lastSession = agentStat.sessions[agentStat.sessions.length - 1]
-        const lastTime = lastSession.createdAt ? new Date(lastSession.createdAt).getTime() : 0
+        let lastTime2 = 0
+        for (const s of agentStat.sessions) {
+          const ts = s.timestamp || s.createdAt
+          if (ts) {
+            const t = new Date(ts).getTime()
+            if (t > lastTime2) lastTime2 = t
+          }
+        }
 
-        if (lastTime > 0 && lastTime < twoHoursAgo) {
+        if (lastTime2 > 0 && lastTime2 < twoHoursAgo) {
           alerts.push({
             id: `alert_${alertId++}`,
             level: 'warning',
@@ -245,8 +251,15 @@ export function refresh(): void {
     let lastActivityTime = 0
 
     if (recentSessions.length > 0) {
-      const lastSession = recentSessions[recentSessions.length - 1]
-      lastActivityTime = lastSession.createdAt ? new Date(lastSession.createdAt).getTime() : 0
+      // Find the most recent activity time across ALL sessions
+      // (sessions may not be sorted by time if read from multiple files)
+      for (const s of recentSessions) {
+        const ts = s.timestamp || s.createdAt
+        if (ts) {
+          const t = new Date(ts).getTime()
+          if (t > lastActivityTime) lastActivityTime = t
+        }
+      }
       if (lastActivityTime > fifteenMinutesAgo) {
         status = 'online'
       }
