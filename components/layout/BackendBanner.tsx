@@ -27,7 +27,7 @@ export function BackendBanner() {
           <button
             onClick={reconnect}
             disabled={retrying}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 transition-colors text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white hover:bg-gray-100 transition-colors text-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {retrying ? (
               <>

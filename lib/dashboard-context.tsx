@@ -46,6 +46,8 @@ interface DashboardState {
 const DashboardContext = createContext<DashboardState | null>(null)
 
 const POLL_INTERVAL = 30_000
+// 断开提示延迟：连续失败 N 次才显示"未连接"（N × 30s ≈ 5分钟）
+const DISCONNECT_THRESHOLD = 10
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // ── 用 mock 数据作为初始值，页面立即有内容显示 ──
@@ -67,6 +69,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const isInitialized = useRef(false)
 
   const [retrying, setRetrying] = useState(false)
+  const consecutiveFailures = useRef(0)
+  const everConnected = useRef(false)  // 是否曾经成功连上过后端
 
   const fetchAll = useCallback(async (silent = false) => {
     if (isFetching.current) return
@@ -103,7 +107,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       ])
 
       const alive = aliveResult.status === 'fulfilled' ? aliveResult.value : false
-      setIsLive(alive)
+
+      // 连续失败计数：后端在线时重置为0；离线时累加
+      if (alive) {
+        consecutiveFailures.current = 0
+        everConnected.current = true
+      } else {
+        consecutiveFailures.current += 1
+      }
+
+      // 判定是否真正离线：
+      // - 从未连上过后端 → 首次失败就标记离线（显示提示条）
+      // - 曾经连上过 → 连续失败达到阈值才标记离线（容错5分钟）
+      // - 重新连上 → 计数归零，立即恢复在线
+      if (!everConnected.current) {
+        setIsLive(alive)
+      } else {
+        setIsLive(consecutiveFailures.current < DISCONNECT_THRESHOLD)
+      }
 
       if (alive) {
         // Real data mode: completely replace mock data with live API data
