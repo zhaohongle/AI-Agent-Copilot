@@ -1,6 +1,7 @@
 'use client'
 
-import { use, useState, Suspense } from 'react'
+import { useState, Suspense } from 'react'
+import { useParams } from 'next/navigation'
 import { Activity, Cpu, Zap, TrendingUp, AlertTriangle, Clock, FileText } from 'lucide-react'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { cn } from '@/lib/utils'
@@ -298,15 +299,15 @@ function AgentDetailContent({ id }: { id: string }) {
   )
 }
 
-export default function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function AgentDetailPage() {
   return (
     <Suspense fallback={<div className="text-center py-20 text-secondary">加载中...</div>}>
-      <AgentDetailInner params={params} />
+      <AgentDetailInner />
     </Suspense>
   )
 }
 
-function AgentDetailInner({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  return <AgentDetailContent id={id} />
+function AgentDetailInner() {
+  const params = useParams<{ id: string }>()
+  return <AgentDetailContent id={params.id} />
 }
