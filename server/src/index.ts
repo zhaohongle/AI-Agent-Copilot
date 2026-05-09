@@ -61,6 +61,14 @@ app.post('/api/refresh', (req, res) => {
   res.json({ status: 'ok', message: 'Data refreshed', updatedAt: getCache().updatedAt })
 })
 
+// SPA fallback: serve index.html for all non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next()
+  const path = require('path')
+  const staticDir = path.join(__dirname, '../../out')
+  res.sendFile(path.join(staticDir, 'index.html'))
+})
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Agent Cockpit API Server running on port ${PORT}`)
