@@ -13,7 +13,7 @@ import memoryRouter from './routes/memory'
 import docsRouter from './routes/docs'
 
 const app = express()
-const PORT = process.env.API_PORT || 3001
+const PORT = process.env.API_PORT || 5173  // 使用允许范围内的端口
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'  // 开发/演示环境允许所有 origin
 
 // Middleware
@@ -70,7 +70,7 @@ app.get('*', (req, res, next) => {
 })
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {  // 监听所有接口，支持 tunnel 访问
   console.log(`Agent Cockpit API Server running on port ${PORT}`)
   console.log(`CORS enabled for: ${CORS_ORIGIN}`)
   console.log(`Auto-refresh interval: ${REFRESH_INTERVAL / 1000}s`)
