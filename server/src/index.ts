@@ -13,7 +13,7 @@ import memoryRouter from './routes/memory'
 import docsRouter from './routes/docs'
 
 const app = express()
-const PORT = process.env.API_PORT || 5173  // 使用允许范围内的端口
+const PORT = Number(process.env.API_PORT) || 5173  // 使用允许范围内的端口
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'  // 开发/演示环境允许所有 origin
 
 // Middleware
