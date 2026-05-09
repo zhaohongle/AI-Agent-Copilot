@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['*']
+    }
+  },
   async rewrites() {
     return [
       {

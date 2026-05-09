@@ -14,11 +14,16 @@ import docsRouter from './routes/docs'
 
 const app = express()
 const PORT = process.env.API_PORT || 3001
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173'
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'  // 开发/演示环境允许所有 origin
 
 // Middleware
 app.use(cors({ origin: CORS_ORIGIN }))
 app.use(express.json())
+
+// Serve static files from Next.js build (out/)
+const path = require('path')
+const staticDir = path.join(__dirname, '../../out')
+app.use(express.static(staticDir))
 
 // Routes
 app.use('/api/metrics', metricsRouter)

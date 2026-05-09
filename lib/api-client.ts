@@ -1,16 +1,18 @@
 import type { Agent, Metrics, TrendData, Alert, Task, CronJob, MemoryFile } from '@/types'
 
 // API Base URL - 默认使用相对路径（通过 Next.js 代理）
+// 生产环境（静态部署）下需指向后端实际地址
 // 用户可在 BackendBanner 中自定义后端地址（存入 localStorage）
 function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('cockpit_api_base')
     if (custom) return custom.replace(/\/$/, '')
   }
-  return ''
+  // 默认值：开发环境用相对路径（proxy），生产环境直接访问后端端口
+  return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'
 }
 
-const API_BASE_URL = ''  // 默认值，实际使用 getApiBaseUrl()
+const API_BASE_URL = getApiBaseUrl()  // 实际使用 getApiBaseUrl()
 
 // 内存缓存层（客户端单例）
 const cache = new Map<string, { data: any; timestamp: number }>()
